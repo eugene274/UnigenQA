@@ -49,80 +49,70 @@ void UnigenQA::Init(TString filePath, TString treeName)
     cout << "No run description in input file." << endl;
   }
   cout << "Target Momentum: " << run->GetPTarg() << endl;
-  if(TMath::Abs(run->GetPTarg()) > 0.001) 
-	{ 
-    cout << "Input data is in CM frame" << endl;
-    fElab = (TMath::Power(run->GetNNSqrtS(),2)-
-                     2*TMath::Power(0.938271998,2))/(2*0.938271998);
-    fPlab = TMath::Sqrt(fElab*fElab - TMath::Power(0.938271998,2));
-    fBeta = fPlab / (fElab + 0.938271998);
-    fGamma = 1. / TMath::Sqrt(1. - fBeta*fBeta);
-		SetSnn (run->GetNNSqrtS());
-  } 
-	else 
-	{
-		cout << "Input data is in LAB frame" << endl;
-		SetPlab (run->GetPProj());
-	}
+  if(TMath::Abs(run->GetPTarg()) > 0.001) cout << "Input data is in CM frame" << endl;
+	double mProton = 0.938272029;
+	fA = run -> GetAProj() > run -> GetATarg() ? run -> GetAProj() : run -> GetATarg();
+	fZ = run -> GetZProj() > run -> GetZTarg() ? run -> GetZProj() : run -> GetZTarg();
+	fSnn = run -> GetNNSqrtS();
+	fPcm = 0.5 * sqrt (fSnn * fSnn - 4. * mProton * mProton);
+	fElab = 2 * fPcm * fPcm / mProton + mProton;
+	fPlab = sqrt (fElab * fElab - mProton * mProton);
+	fEkin = fSnn * fSnn / 1.87 - 1.87;
+	fBeta = fPlab / fElab;
+	cout << "Snn = " << fSnn << " AGeV" << endl;
+	cout << "Pcm = " << fPcm << " AGeV" << endl;
+	cout << "Plab = " << fPlab << " AGeV" << endl;
+	cout << "Elab = " << fElab << " AGeV" << endl;
+	cout << "Ekin = " << fEkin << " AGeV" << endl;
+	cout << "beta = " << fBeta << endl;
 }
-
-void UnigenQA::SetPlab (double fPlab) 
-{ 
-	UnigenQA::fPlab = fPlab;
-	fElab = sqrt (fPlab * fPlab + 0.938271998 * 0.938271998); 
-	fBeta = sqrt (1.- pow (0.938271998 / (fPlab + 0.938271998), 2));
-	fGamma = 1. / sqrt (1. - fBeta * fBeta);
-	fPc = sqrt( ( 0.938271998 * fElab - 0.938271998 * 0.938271998 )/2 );
-	fSnn = sqrt ( 4 * (fPc*fPc + 0.938271998 * 0.938271998) );
-	fEkin = fSnn * fSnn / 1.87 - 1.87; 
-}
-
 
 void UnigenQA::Run(Int_t nEvents)
 {
-    cout << "Snn = " << fSnn << " AGeV" << endl;
-    cout << "Elab = " << fElab << " AGeV" << endl;
-    cout << "Ekin = " << fEkin << " AGeV" << endl;
-    cout << "Plab = " << fPlab << " AGeV" << endl;
-    cout << "Pc = " << fPc << " AGeV" << endl;
-		cout << "beta = " << fBeta << endl;
-		cout << "gamma = " << fGamma << endl << endl;
     Long64_t nevents =  nEvents < fChain->GetEntries() ? nEvents : fChain->GetEntries();
     Long64_t outputStep = nevents / 10;
     std::cout << "Entries = " << nevents << std::endl;
 
-    for (int i=0;i<nevents;i++)
+    for (int i = 0; i < nevents; i++)
     {
-        if ( (i+1) % outputStep == 0) std::cout << i+1 << "/" << nevents << "\r" << std::flush;
-        fChain->GetEntry(i);
-				FillTracks(); // !!! particle loop goes before the event loop (energy summ is calculated in the former)
-        FillEventInfo(); // !!! particle loop goes before the event loop (energy summ is calculated in the former)
+//        if ( (i + 1) % outputStep == 0) std::cout << i + 1 << "/" << nevents << "\r" << std::flush;
+				cout << i + 1 << endl;
+        fChain -> GetEntry (i);
+				FillTracks (); // !!! particle loop goes before the event loop (energy summ is calculated in the former)
+        FillEventInfo (); // !!! particle loop goes before the event loop (energy summ is calculated in the former)
     }
 }
 
 void UnigenQA::Init_Histograms()
 {
-
-    Int_t nbins = 500;
+		gMomentumAxes[kEcm].max = fSnn * fA * 0.5;
+		gMomentumAxes[kPcm].max = fSnn * fA * 0.5;
+		gMomentumAxes[kMcm].max = fSnn * fA * 0.5;
+		gMomentumAxes[kElab].max = fElab * fA * 0.5;
+		gMomentumAxes[kPlab].max = fElab * fA * 0.5;
+		gMomentumAxes[kMlab].max = fSnn * fA * 0.5;
+		gMomentumAxes[kA].max = fA + 2; gMomentumAxes[kA].nBins = fA + 2;
+		gMomentumAxes[kZ].max = fZ + 2; gMomentumAxes[kZ].nBins = fZ + 2;
 
     if (fReferenceChain == nullptr) fReferenceChain = fChain;
     else {
         cout << "Using reference chain..." << endl;
     }
-    Double_t fPSDMax = fElab * 200. * 5.;
-    Double_t fMmax = fReferenceChain->GetMaximum("fNpa") + 10;
+    Double_t fPSDMax = fElab * 200.;
+    Double_t fMmax = fReferenceChain -> GetMaximum ("fNpa") + 10;
 
     TString name, title;
 
-    hM = new TH1D("hM","Track multiplicity;Multiplicity;nEvents", Nint(fMmax), 0, fMmax);
+    hM = new TH1D("hM","Track multiplicity;Multiplicity;nEvents", Nint (fMmax), 0, fMmax);
     hB = new TH1D("hB","Impact parameter; B (fm);nEvents", 170, 0, 17);
     hPsi = new TH1D("hPsi", "#Psi_{RP};#Psi_{RP} (rad);Nevents", 100, -3.15, 3.15);
 
-    hMBcorr = new TH2D("hMBcorr", "M : B;Multiplicity;B (fm)", Nint(fMmax), 0, fMmax, 170, 0, 17);
+    hMBcorr = new TH2D("hMBcorr", "M : B;Multiplicity;B (fm)", Nint (fMmax), 0, fMmax, 170, 0, 17);
     h2BAmax = new TH2D("h2BAmax", "B : A_{max};B (fm);A_{max}", 170, 0, 17, 200, 0, 200);
     h2BZmax = new TH2D("h2BZmax", "B : Z_{max};B (fm);Z_{max}", 170, 0, 17, 82, 0, 82);
 
     /* PSD histogram initialization */
+    Int_t nbins = 500;
 		for (uint pidGroup = 0; pidGroup < fPidGroups.size(); pidGroup++)
 		{
 			for (uint psdCorr = 0; psdCorr < gPSDCorr.size (); psdCorr++) {
@@ -168,9 +158,11 @@ void UnigenQA::Init_Histograms()
 					auto yAxis = gMomentumAxes[axes[1]];
 
 					TString name = "hTrack" + xAxis.name + yAxis.name + particle.name;
+					TString title = yAxis.name + " : " + xAxis.name + " (" + particle.name + ")";
 					TString xTitle = xAxis.displayName;
 					TString yTitle = yAxis.displayName;
-					hTrackMomentumCorr[iCorr][iPart] = new TH2D(name, "",
+					hTrackMomentumCorr.push_back (new TH2D* [kParticles]);
+					hTrackMomentumCorr[iCorr][iPart] = new TH2D(name, title,
 																					 xAxis.nBins, xAxis.min, xAxis.max,
 																					 yAxis.nBins, yAxis.min, yAxis.max);
 					hTrackMomentumCorr[iCorr][iPart]->SetXTitle(xTitle);
@@ -182,7 +174,6 @@ void UnigenQA::Init_Histograms()
 			hYields[iPart] = new TProfile(name, title, 100, 0, 20);
 
 			for (Int_t iHarm=0; iHarm<2; ++iHarm) {
-//				auto& particle = gParticles[iPart];
 				name = Form("hv%d%s_pT", iHarm + 1, particle.name.c_str());
 				title = Form("hv%d%s_pT;p_{T} (GeV/#it{c});v%d", iHarm + 1, particle.name.c_str(), iHarm + 1);
 				pVn_pT[iHarm][iPart] = new TProfile(name, name, 50, gMomentumAxes[kPT].min, gMomentumAxes[kPT].max);
@@ -193,12 +184,6 @@ void UnigenQA::Init_Histograms()
 		}
 		
 		hPdg = new TH1D("hPdg","PDG code;PDG code;nCounts", 1000, -500, 3500);
-		hA = new TH1D("hA","Mass number; A", 200, 0, 200);
-		hZ = new TH1D("hZ","Charge number; Z", 82, 0, 82);
-		h2ZA = new TH2D("h2ZA","A : Z; A; Z", 200, 0, 200, 82, 0, 82);
-		h2EcmA = new TH2D ("h2EcmA", "Ecm:A;A;Ecm (GeV)", 200, 0, 200, gMomentumAxes[kEcm].nBins, gMomentumAxes[kEcm].min, gMomentumAxes[kEcm].max);
-		h2ElabA = new TH2D ("h2ElabA", "Elab :A;A;Elab (GeV)", 200, 0, 200, gMomentumAxes[kElab].nBins, gMomentumAxes[kElab].min, gMomentumAxes[kElab].max);
-	
 
     cout << "Initialization finished" << endl;
 }
@@ -239,8 +224,8 @@ void UnigenQA::FillTracks()
     Int_t nTracks = event_->GetNpa();
 		TLorentzVector momentum;
     Int_t yield[kParticles] = {0};
-		Int_t pdg, mass, charge;
-		double y, theta, Elab, Ecm, Pcm, Plab;
+		Int_t pdg, A, Z;
+		double y, theta, Elab, Ecm, Pcm, Plab, Mcm, Mlab;
 		
 		fAmax = 0;
 		fZmax = 0;
@@ -256,37 +241,58 @@ void UnigenQA::FillTracks()
     {
         track = event_ -> GetParticle(i);
 				pdg = track -> GetPdg();
+				if (pdg == 22) continue; // patch
 				if (pdg / 1000000000 != 0) 
 				{
-					mass = abs (pdg % 10000 / 10);
-					charge = abs (pdg % 10000000 / 10000); 
+					A = abs (pdg % 10000 / 10);
+					Z = abs (pdg % 10000000 / 10000); 
 				}
 				else 
 				{
-					mass = 1;
-					charge = 1;
+					A = 1;
+					Z = 1;
 				}
-				if (mass > fAmax) fAmax = mass;
-				if (charge > fZmax) fZmax = charge;
+				if (A > fAmax) fAmax = A;
+				if (Z > fZmax) fZmax = Z;
 				momentum = track -> GetMomentum();
 				y = momentum.Rapidity();
 				Ecm = momentum.E ();
 				Pcm = momentum.P ();
+//				Mcm = sqrt (fabs (Ecm * Ecm - Pcm * Pcm));
+				Mcm = sqrt (Ecm * Ecm - Pcm * Pcm);
+				if (Ecm - Pcm < 0.) 
+				{
+					cout << "m^2 = " << Ecm * Ecm - Pcm * Pcm << "\tMcm = " << Mcm << "\tA = " << A << "\tZ = " << Z << "\ti = " << i << "\tpdg = " << pdg << endl;
+//					momentum.SetE (momentum.P ());
+//					Ecm = Pcm;
+//					Mcm = 0.;
+				}
 				momentum.Boost (0., 0., fBeta);
 				theta = momentum.Theta ();
 				Elab = momentum.E ();
 				Plab = momentum.P ();
+				Mlab = sqrt (Elab * Elab - Plab * Plab);
 //				Elab = track -> E();
+				
 
 				if (abs (pdg) < 3500) hPdg -> Fill (pdg);
-				hA -> Fill (mass);
-				hZ -> Fill (charge);
-				h2ZA -> Fill (mass, charge);
-				h2EcmA -> Fill (mass, Ecm);
-				h2ElabA -> Fill (mass, Elab);
 				
-        double mom[8] = {momentum.Pt(), momentum.PseudoRapidity(), momentum.Phi(), y, Ecm, Elab, Pcm, Plab};
-
+        double mom[kAxes];
+				mom [kPT] = momentum.Pt();
+				mom [kETA] = momentum.PseudoRapidity();
+				mom [kPHI] = momentum.Phi();
+				mom [kYM] = y;
+				mom [kEcm] = Ecm;
+				mom [kElab] = Elab;
+				mom [kPcm] = Pcm;
+				mom [kPlab] = Plab;
+				mom [kMcm] = Mcm;
+				mom [kMlab] = Mlab;
+				mom [kA] = A;
+				mom [kZ] = Z;
+				mom [kMcm_Ecm] = Mcm / Ecm;
+				mom [kMlab_Elab] = Mlab / Elab;
+				
         for (Int_t iMom=0; iMom<kAxes; ++iMom) {
             hTrackMomentum[iMom][0] -> Fill( mom[iMom] );
         }
@@ -311,7 +317,9 @@ void UnigenQA::FillTracks()
 					}
 				}
 				
-        for(Int_t iPart=0; iPart<kParticles; ++iPart) {
+        for(Int_t iPart=1; iPart<kParticles; ++iPart) {
+						if (pdg / 1000000000 != 0) pdg = 999999;
+						if (abs (pdg) < 38) pdg = 99999;
             if (gParticles[iPart].pdg == pdg) 
 						{
                 yield[iPart] += 1;
@@ -352,11 +360,6 @@ void UnigenQA::Write_Histograms(const TString filename)
     h2BAmax -> Write();
     h2BZmax -> Write();
 		hPdg -> Write ();
-		hA -> Write ();
-		hZ -> Write ();
-		h2ZA -> Write ();
-		h2EcmA -> Write ();
-		h2ElabA -> Write ();
 		
 		for (auto psdGroup : gPSDGroups)
 		{
@@ -384,15 +387,7 @@ void UnigenQA::Write_Histograms(const TString filename)
 			outputDir = outputFile -> mkdir ((group1.name + group2.name).c_str ());
 			outputDir -> cd ();
 			for (auto hist : hPSDGroupsCorr [psdCorr]) hist -> Write ();
-		}
-	
-//		for (uint pidGroup = 0; pidGroup < fPidGroups.size (); pidGroup++)
-//		{
-//			for (auto hist : hPSDGroupEnergy [pidGroup]) hist -> Write();
-//			for (auto hist : hPSDGroupsCorr [pidGroup]) hist -> Write();
-//			for (auto hist : hPSDMultCorr [pidGroup]) hist -> Write();
-//			for (auto hist : hBPSDCorr [pidGroup]) hist -> Write();
-//		}		
+		}	
 			
 		for (auto axis : gMomentumAxes) {
 			outputDir = outputFile -> mkdir (axis.name.c_str ());
@@ -407,7 +402,7 @@ void UnigenQA::Write_Histograms(const TString filename)
 				auto yAxis = gMomentumAxes[axes[1]];
 				outputDir = outputFile -> mkdir ((xAxis.name + yAxis.name).c_str ());
 				outputDir -> cd ();
-				for (auto hist : hTrackMomentumCorr [iCorr]) hist -> Write();
+				for (uint iPart = 0; iPart < kParticles; iPart++) hTrackMomentumCorr [iCorr][iPart] -> Write();
 		}
 
 		for (Int_t iHarm=0; iHarm<2; ++iHarm)

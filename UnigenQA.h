@@ -1,5 +1,5 @@
-#ifndef MODELQA_H
-#define MODELQA_H 1
+#ifndef UNIGENQA_H
+#define UNIGENQA_H 1
 
 #include <iostream>
 #include <fstream>
@@ -25,10 +25,10 @@ namespace qa {
      */
 		
 		enum EMomentumAxis {
-        kPT = 0, kETA, kPHI, kYM, kEcm, kElab, kPcm, kPlab, kAxes
+        kPT = 0, kETA, kPHI, kYM, kEcm, kElab, kPcm, kPlab, kMcm, kMlab, kA, kZ, kMcm_Ecm, kMlab_Elab, kAxes 
     };
 
-    const struct TMomentumAxis {
+    struct TMomentumAxis {
         Int_t id;
         std::string name;
         std::string displayName;
@@ -47,18 +47,30 @@ namespace qa {
 						/* energy in CoM frame */
             {.id = kEcm, .name = "Ecm", .displayName="E_{CM} (GeV)", .nBins = 1000, .min=0., .max=1000.0},
 						/* energy in lab frame */
-            {.id = kElab, .name = "Elab", .displayName="E_{lab} (GeV)", .nBins = 1000, .min=0., .max=2400.0},
-            /* full momentum  in CoM frame */
-            {.id = kPcm, .name = "Pcm", .displayName="p_{cm} (GeV/#it{c})", .nBins = 1000, .min=0., .max=500.},
+            {.id = kElab, .name = "Elab", .displayName="E_{LS} (GeV)", .nBins = 1000, .min=0., .max=2400.0},
+            /* full momentum in CoM frame */
+            {.id = kPcm, .name = "Pcm", .displayName="p_{CM} (GeV/#it{c})", .nBins = 1000, .min=0., .max=500.},
             /* full momentum in lab frame */
-            {.id = kPlab, .name = "Plab", .displayName="p_{lab} (GeV/#it{c})", .nBins = 1000, .min=0., .max=2400.},
+            {.id = kPlab, .name = "Plab", .displayName="p_{LS} (GeV/#it{c})", .nBins = 1000, .min=0., .max=2400.},
+            /* mass in CoM frame */
+            {.id = kMcm, .name = "Mcm", .displayName="M_{CMS} (GeV/#it{c^{2}})", .nBins = 200, .min=0., .max=200},
+            /* mass in lab frame */
+            {.id = kMlab, .name = "Mlab", .displayName="M_{LS} (GeV/#it{c^{2}})", .nBins = 200, .min=0., .max=200},
+            /* mass number */
+            {.id = kA, .name = "A", .displayName="Mass number", .nBins = 200, .min=0., .max=200},
+            /* number of protons */
+            {.id = kZ, .name = "Z", .displayName="Charge number", .nBins = 82, .min=0., .max=82},
+            /* E/M (CMS) */
+            {.id = kMcm_Ecm, .name = "Mcm_Ecm", .displayName="E/M (CMS)", .nBins = 100, .min=0., .max=1.},
+            /* E/M (LS) */
+            {.id = kMlab_Elab, .name = "Mlab_Elab", .displayName="E/M (LS)", .nBins = 100, .min=0., .max=1.},
     };
 
     /**
      * Particles definition
      */
     enum EParticles {
-        kALLSPECIES = 0, kPROTON, kPROTONBAR, kPIPLUS, kPIMINUS, kKPLUS, kKMINUS, kLAMBDA, kLAMBDABAR, kParticles
+        kALLSPECIES = 0, kLEPTONS, kFRAGMENTS, kPROTON, kPROTONBAR, kPIPLUS, kPIMINUS, kKPLUS, kKMINUS, kLAMBDA, kLAMBDABAR, kParticles
     };
 		
     const struct TParticle {
@@ -70,6 +82,8 @@ namespace qa {
         std::string displayName;
     } gParticles[kParticles] = {
 						{kALLSPECIES,   9999,  9999, 9999,"_all_species","_all species"},
+						{kLEPTONS,   99999,  99999, 99999,"_leptons","_leptons"},
+						{kFRAGMENTS,   999999,  999999, 999999,"_fragments","_fragments"},
             {kPROTON,       2212,  0.938, 1,  "_p",          "_p"},
             {kPROTONBAR,    -2212, 0.938, -1, "_pbar",       "_\\bar{p}"},
             {kPIPLUS,       211,   0.138, 1,  "_piplus",     "_\\pi^{+}"},
@@ -108,11 +122,6 @@ namespace qa {
         UnigenQA();
 
         ~UnigenQA();
-
-        void SetSnn (double fSnn) { UnigenQA::fSnn = fSnn; }
-				
-        void SetPlab (double fPlab);
-				
 				
         void Init(TString fileName, TString treeName);
 
@@ -147,6 +156,15 @@ namespace qa {
                 {kPlab, kElab},
                 {kPlab, kPcm},
                 {kElab, kEcm},
+                {kPcm, kMcm_Ecm},
+                {kPlab, kMlab_Elab},
+                {kA, kEcm},
+                {kA, kElab},
+                {kZ, kEcm},
+                {kZ, kElab},
+                {kMcm, kEcm},
+                {kMlab, kElab},
+                {kMcm, kMlab},
         };
 
         const TMomentumAxis gMultiplicity = {.id = kAxes, .name = "Mult", .displayName = "Multiplicity", .nBins = 250, .min = 0, .max = 250};
@@ -156,7 +174,7 @@ namespace qa {
         TChain *fReferenceChain{};
         UEvent *event_;
 
-				double fSnn {0.}, fPc {0.}, fPlab {0.}, fElab {0.}, fEkin {0.}, fBeta {0.}, fGamma {1.};
+				double fSnn {-999.}, fPcm {-999.}, fPlab {-999.}, fElab {-999.}, fEkin {-999.}, fBeta {-999.}, fA {-999.}, fZ {-999.};
 				vector <vector <int>> fPidGroups = {{0, 1099999999}, {37, 1099999999}};
 				vector <TString> fPidGroupNames = {"all species", "hadrons"};
 				double fPSDGroupEnergy [kPSDGroups][2];
@@ -180,9 +198,13 @@ namespace qa {
 				TH1D *hZ;
 				TH2D *h2ZA;
         TH1D *hTrackMomentum [kAxes][kParticles];
-        TH2D *hTrackMomentumCorr [9][kParticles];
+        vector <TH2D**> hTrackMomentumCorr;
         TH2D *h2ElabA;
         TH2D *h2EcmA;
+        TH2D *h2MlabA;
+        TH2D *h2McmA;
+        TH2D *h2PcmMcm_Ecm;
+        TH2D *h2PlabMlab_Elab;
 
         // Flow
         TProfile *pVn_pT[2][kParticles];
