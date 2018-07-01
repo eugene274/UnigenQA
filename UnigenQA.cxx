@@ -47,7 +47,7 @@ void UnigenQA::Init(TString filePath, TString treeName) {
     cout << "No run description in input file." << endl;
   }
   cout << "Target Momentum: " << run->GetPTarg() << endl;
-  if (TMath::Abs(run->GetPTarg()) > 0.001) cout << "Input data is in CM frame" << endl;
+  if (Abs(run->GetPTarg() + run->GetPProj()) < 1e-5) cout << "Input data is in CM frame" << endl;
   double mProton = 0.938272029;
   fA = run->GetAProj() > run->GetATarg() ? run->GetAProj() : run->GetATarg();
   fZ = run->GetZProj() > run->GetZTarg() ? run->GetZProj() : run->GetZTarg();
@@ -56,8 +56,7 @@ void UnigenQA::Init(TString filePath, TString treeName) {
   fElab = 2 * fPcm * fPcm / mProton + mProton;
   fPlab = sqrt(fElab * fElab - mProton * mProton);
   fEkin = fSnn * fSnn / 1.87 - 1.87;
-  // fBeta = fPlab / fElab;
-  fBeta = -(-fElab * fPlab + (fSnn / 2) * fPcm) / (fPlab * fPlab + (fSnn / 2) * (fSnn / 2));
+  fBeta = - run->GetPTarg()/(run->GetTargetEnergy()/run->GetATarg());
   cout << "Snn = " << fSnn << " AGeV" << endl;
   cout << "Pcm = " << fPcm << " AGeV" << endl;
   cout << "Plab = " << fPlab << " AGeV" << endl;
