@@ -39,7 +39,7 @@ struct TMomentumAxis {
     /* traverse momentum */
     {.id = kPT, .name = "Pt", .displayName="p_{T} (GeV/#it{c})", .nBins = 1000, .min=0.0, .max=2.5},
     /* pseudorapidity */
-    {.id = kETA, .name = "Eta", .displayName="\\eta", .nBins = 1000, .min=0., .max=10.},
+    {.id = kETA, .name = "Eta", .displayName="\\eta", .nBins = 1000, .min=-4., .max=10.},
     /* azimuthal angle */
     {.id = kPHI, .name = "Phi", .displayName="\\varphi (rad)", .nBins = 1000, .min=-TMath::Pi(), .max=TMath::Pi()},
     /* rapidity in CoM frame */
@@ -188,6 +188,10 @@ class UnigenQA {
   double fElab{-999.};
   double fPlab{-999.};
   double fSnn{-999.};
+
+  bool fIsInLabFrame{false};
+  bool fIsInCoMFrame{false};
+
   vector<vector<int>> fPidGroups = {{0, 1099999999}, {37, 1099999999}};
   vector<TString> fPidGroupNames = {"all species", "hadrons"};
   double fPSDGroupEnergy[kPSDGroups][2];

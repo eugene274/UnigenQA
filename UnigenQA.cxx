@@ -47,7 +47,6 @@ void UnigenQA::Init(TString filePath, TString treeName) {
     cout << "No run description in input file." << endl;
   }
   cout << "Target Momentum: " << run->GetPTarg() << endl;
-  if (Abs(run->GetPTarg() + run->GetPProj()) < 1e-5) cout << "Input data is in CM frame" << endl;
   double mProton = 0.938272029;
   fA = run->GetAProj() > run->GetATarg() ? run->GetAProj() : run->GetATarg();
   fZ = run->GetZProj() > run->GetZTarg() ? run->GetZProj() : run->GetZTarg();
@@ -59,6 +58,11 @@ void UnigenQA::Init(TString filePath, TString treeName) {
   fBetaLab = -run->GetPTarg() / (run->GetTargetEnergy() / run->GetATarg());
   fBetaCM = - (run->GetPProj() + run->GetPTarg())
       / (run->GetTargetEnergy() / run->GetATarg() + run->GetProjectileEnergy() / run->GetAProj());
+
+  fIsInLabFrame = Abs(fBetaLab) < 1e-5;
+  fIsInCoMFrame = Abs(fBetaCM) < 1e-5;
+  if (fIsInCoMFrame) cout << "Input data is in CoM frame" << endl;
+  if (fIsInLabFrame) cout << "Input data is in Lab frame" << endl;
 
   cout << "Snn = " << fSnn << " AGeV" << endl;
   cout << "Pcm = " << fPcm << " AGeV" << endl;
@@ -246,10 +250,10 @@ void UnigenQA::FillTracks() {
     if (A > fAmax) fAmax = A;
     if (Z > fZmax) fZmax = Z;
     momentumLab = track->GetMomentum();
-    momentumLab.Boost(0., 0., fBetaLab);
+    if (!fIsInLabFrame) momentumLab.Boost(0., 0., fBetaLab);
 
     momentumCoM = track->GetMomentum();
-    momentumCoM.Boost(0., 0., fBetaCM);
+    if (!fIsInCoMFrame) momentumCoM.Boost(0., 0., fBetaCM);
 
     y = momentumCoM.Rapidity();
     Ecm = momentumCoM.E();
