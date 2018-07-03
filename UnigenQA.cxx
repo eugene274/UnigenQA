@@ -56,13 +56,17 @@ void UnigenQA::Init(TString filePath, TString treeName) {
   fElab = 2 * fPcm * fPcm / mProton + mProton;
   fPlab = sqrt(fElab * fElab - mProton * mProton);
   fEkin = fSnn * fSnn / 1.87 - 1.87;
-  fBeta = - run->GetPTarg()/(run->GetTargetEnergy()/run->GetATarg());
+  fBetaLab = -run->GetPTarg() / (run->GetTargetEnergy() / run->GetATarg());
+  fBetaCM = - (run->GetPProj() + run->GetPTarg())
+      / (run->GetTargetEnergy() / run->GetATarg() + run->GetProjectileEnergy() / run->GetAProj());
+
   cout << "Snn = " << fSnn << " AGeV" << endl;
   cout << "Pcm = " << fPcm << " AGeV" << endl;
   cout << "Plab = " << fPlab << " AGeV" << endl;
   cout << "Elab = " << fElab << " AGeV" << endl;
   cout << "Ekin = " << fEkin << " AGeV" << endl;
-  cout << "beta = " << fBeta << endl;
+  cout << "beta_LAB = " << fBetaLab << endl;
+  cout << "beta_CM = " << fBetaCM << endl;
 }
 
 void UnigenQA::Run(Int_t nEvents) {
@@ -73,6 +77,7 @@ void UnigenQA::Run(Int_t nEvents) {
   for (int i = 0; i < nevents; i++) {
 //        if ( (i + 1) % outputStep == 0) std::cout << i + 1 << "/" << nevents << "\r" << std::flush;
     fChain->GetEntry(i);
+    if (event_->GetNpa() < 2) continue;
     FillTracks(); // !!! particle loop goes before the event loop (energy summ is calculated in the former)
     FillEventInfo(); // !!! particle loop goes before the event loop (energy summ is calculated in the former)
   }
@@ -211,7 +216,11 @@ void UnigenQA::FillTracks() {
   UParticle *track;
   double psiRP = event_->GetPhi();
   Int_t nTracks = event_->GetNpa();
-  TLorentzVector momentum;
+
+
+  TLorentzVector momentumLab;
+  TLorentzVector momentumCoM;
+
   Int_t yield[kParticles] = {0};
   Int_t pdg, A, Z;
   double y, theta, Elab, Ecm, Pcm, Plab, Mcm, Mlab;
@@ -237,24 +246,26 @@ void UnigenQA::FillTracks() {
     }
     if (A > fAmax) fAmax = A;
     if (Z > fZmax) fZmax = Z;
-    momentum = track->GetMomentum();
-    y = momentum.Rapidity();
-    Ecm = momentum.E();
-    Pcm = momentum.P();
+    momentumLab = track->GetMomentum();
+    momentumLab.Boost(0., 0., fBetaLab);
 
-//				Mcm = sqrt (fabs (Ecm * Ecm - Pcm * Pcm));
+    momentumCoM = track->GetMomentum();
+    momentumCoM.Boost(0., 0., fBetaCM);
+
+    y = momentumCoM.Rapidity();
+    Ecm = momentumCoM.E();
+    Pcm = momentumCoM.P();
     Mcm = sqrt(Ecm * Ecm - Pcm * Pcm);
     if (Ecm - Pcm < 0.) {
       cout << "m^2 = " << Ecm * Ecm - Pcm * Pcm << "\tMcm = " << Mcm << "\tA = " << A << "\tZ = " << Z << "\ti = " << i
            << "\tpdg = " << pdg << endl;
-//					momentum.SetE (momentum.P ());
+//					momentumLab.SetE (momentumLab.P ());
 //					Ecm = Pcm;
 //					Mcm = 0.;
     }
-    momentum.Boost(0., 0., fBeta);
-    theta = momentum.Theta();
-    Elab = momentum.E();
-    Plab = momentum.P();
+    theta = momentumLab.Theta();
+    Elab = momentumLab.E();
+    Plab = momentumLab.P();
     Mlab = sqrt(Elab * Elab - Plab * Plab);
 
 //				Elab = track -> E();
@@ -263,9 +274,9 @@ void UnigenQA::FillTracks() {
     if (abs(pdg) < 3500) hPdg->Fill(pdg);
 
     double mom[kAxes];
-    mom[kPT] = momentum.Pt();
-    mom[kETA] = momentum.PseudoRapidity();
-    mom[kPHI] = momentum.Phi();
+    mom[kPT] = momentumLab.Pt();
+    mom[kETA] = momentumLab.PseudoRapidity();
+    mom[kPHI] = momentumLab.Phi();
     mom[kYM] = y;
     mom[kEcm] = Ecm;
     mom[kElab] = Elab;

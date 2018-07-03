@@ -179,7 +179,15 @@ class UnigenQA {
   TChain *fReferenceChain{};
   UEvent *event_;
 
-  double fSnn{-999.}, fPcm{-999.}, fPlab{-999.}, fElab{-999.}, fEkin{-999.}, fBeta{-999.}, fA{-999.}, fZ{-999.};
+  double fPcm{-999.};
+  double fZ{-999.};
+  double fA{-999.};
+  double fBetaLab{-999.};
+  double fBetaCM{-999.};
+  double fEkin{-999.};
+  double fElab{-999.};
+  double fPlab{-999.};
+  double fSnn{-999.};
   vector<vector<int>> fPidGroups = {{0, 1099999999}, {37, 1099999999}};
   vector<TString> fPidGroupNames = {"all species", "hadrons"};
   double fPSDGroupEnergy[kPSDGroups][2];
