@@ -77,7 +77,6 @@ void UnigenQA::Run(Int_t nEvents) {
   for (int i = 0; i < nevents; i++) {
 //        if ( (i + 1) % outputStep == 0) std::cout << i + 1 << "/" << nevents << "\r" << std::flush;
     fChain->GetEntry(i);
-    if (event_->GetNpa() < 2) continue;
     FillTracks(); // !!! particle loop goes before the event loop (energy summ is calculated in the former)
     FillEventInfo(); // !!! particle loop goes before the event loop (energy summ is calculated in the former)
   }
@@ -99,7 +98,7 @@ void UnigenQA::Init_Histograms() {
   else {
     cout << "Using reference chain..." << endl;
   }
-  Double_t fPSDMax = fElab * 200.;
+  Double_t fPSDMax = (fElab + 1) * (fA + 10);
   Double_t fMmax = fReferenceChain->GetMaximum("fNpa") + 10;
 
   TString name, title;
