@@ -98,7 +98,7 @@ void UnigenQA::Init_Histograms() {
   gMomentumAxes[kZ].max = fZ + 2;
   gMomentumAxes[kZ].nBins = fZ + 2;
 
-  if (fReferenceChain == nullptr) fReferenceChain = fChain;
+  if (fReferenceChain == NULL) fReferenceChain = fChain;
   else {
     cout << "Using reference chain..." << endl;
   }

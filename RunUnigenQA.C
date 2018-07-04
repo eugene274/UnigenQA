@@ -1,18 +1,25 @@
 #include <stdlib.h>
 #include <string>
+#include <vector>
 #include <TStopwatch.h>
 #include "UnigenQA.h"
 
 using namespace std;
 
+
+const char* gTreeName = "events";
+
 void RunModelQA(TString filePath = "/home/ogolosov/Desktop/analysis/mc/root/dcmqgsm_12.root",
-                TString qaPath = "/home/ogolosov/Desktop/analysis/mc/root/qa_botvina_T0_12agev.root") {
+                TString qaPath = "/home/ogolosov/Desktop/analysis/mc/root/qa_botvina_T0_12agev.root",
+                TChain* reference_chain = NULL
+) {
   TStopwatch timer;
   timer.Reset();
   timer.Start();
 
   qa::UnigenQA qa;
-  qa.Init(filePath, "events");
+  qa.SetReferenceChain(reference_chain);
+  qa.Init(filePath, gTreeName);
   qa.Init_Histograms();
   qa.Run();
   qa.Write_Histograms(qaPath);
@@ -34,8 +41,9 @@ int main(int argc, char **argv) {
 
   po::options_description ops_desc("Allowed options");
   ops_desc.add_options()
-      ("input,i", po::value<std::string>()->required(), "Input file")
-      ("output,o", po::value<std::string>()->required(), "Output file");
+      ("input,i", po::value<string>()->required(), "Input file")
+      ("output,o", po::value<string>()->required(), "Output file")
+      ("reference-chain,r", po::value<vector<string>>(), "Reference chain");
 
   po::positional_options_description pos_desc;
   pos_desc
@@ -58,7 +66,19 @@ int main(int argc, char **argv) {
     out = output.c_str();
   }
 
-  RunModelQA(in, out);
+  TChain* chain = NULL;
+  if (var_map.count("reference-chain")) {
+    cout << "Reference chain..." << endl;
+    chain = new TChain(gTreeName);
+    vector<string> ref_files = var_map["reference-chain"].as<vector<string>>();
+    for (auto ref_file : ref_files) {
+      Int_t n_files = chain->Add(ref_file.c_str());
+      cout << "Adding '" << ref_file << "' " << "Files: " << n_files << endl;
+    }
+  }
+
+
+  RunModelQA(in, out, chain);
   return 0;
 }
 # endif
