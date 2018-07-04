@@ -1,6 +1,4 @@
 #include <stdlib.h>
-#include <string>
-#include <vector>
 #include <TStopwatch.h>
 #include "UnigenQA.h"
 
@@ -33,6 +31,8 @@ void RunModelQA(TString filePath = "/home/ogolosov/Desktop/analysis/mc/root/dcmq
 
 #include <boost/program_options.hpp>
 #include <boost/program_options/parsers.hpp>
+#include <string>
+#include <vector>
 
 using namespace std;
 namespace po = boost::program_options;
@@ -43,7 +43,7 @@ int main(int argc, char **argv) {
   ops_desc.add_options()
       ("input,i", po::value<string>()->required(), "Input file")
       ("output,o", po::value<string>()->required(), "Output file")
-      ("reference-chain,r", po::value<vector<string>>(), "Reference chain");
+      ("reference-chain,r", po::value<vector<string>>()->multitoken(), "Reference chain");
 
   po::positional_options_description pos_desc;
   pos_desc

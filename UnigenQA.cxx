@@ -307,7 +307,7 @@ void UnigenQA::FillTracks() {
     }
     for (auto group : gPSDGroups) {
       for (uint pidGroup = 0; pidGroup < fPidGroups.size(); pidGroup++) {
-        if (theta > group.theta[0] && theta < group.theta[1])
+        if (theta >= group.theta[0] && theta <= group.theta[1])
           if (abs(pdg) > fPidGroups[pidGroup][0] && abs(pdg) < fPidGroups[pidGroup][1]) {
             fPSDGroupEnergy[group.id][pidGroup] += Elab;
           }

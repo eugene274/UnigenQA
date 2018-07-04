@@ -117,7 +117,7 @@ const struct TPSDGroup {
   std::string displayName;
   std::vector<double> theta;
 } gPSDGroups[kPSDGroups] = {
-    {.id = kEFull, .name = "Efull", .displayName = "Full E", .theta = {0, 3.15}},
+    {.id = kEFull, .name = "Efull", .displayName = "Full E", .theta = {-0, 3.15}},
     {.id = kPSDAll, .name = "PSDAll", .displayName = "Full PSD", .theta = {0, 0.074860}},
     {.id = kPSD1, .name = "PSD1", .displayName = "PSD1", .theta = {0., 0.024995}},
     {.id = kPSD2, .name = "PSD2", .displayName = "PSD2", .theta = {0.024995, 0.049958}},
