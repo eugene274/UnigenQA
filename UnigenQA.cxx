@@ -55,10 +55,10 @@ void UnigenQA::Init(TString filePath, TString treeName)
 	fZ = run -> GetZProj() > run -> GetZTarg() ? run -> GetZProj() : run -> GetZTarg();
 	fSnn = run -> GetNNSqrtS();
 	fPcm = 0.5 * sqrt (fSnn * fSnn - 4. * mProton * mProton);
-	fElab = 2 * fPcm * fPcm / mProton + mProton;
+	fElab = 2. * fPcm * fPcm / mProton + mProton;
 	fPlab = sqrt (fElab * fElab - mProton * mProton);
 	fEkin = fSnn * fSnn / 1.87 - 1.87;
-	fBeta = fPlab / fElab;
+	fBeta = 2. * fPcm / fSnn;
 	cout << "Snn = " << fSnn << " AGeV" << endl;
 	cout << "Pcm = " << fPcm << " AGeV" << endl;
 	cout << "Plab = " << fPlab << " AGeV" << endl;
@@ -75,8 +75,7 @@ void UnigenQA::Run(Int_t nEvents)
 
     for (int i = 0; i < nevents; i++)
     {
-//        if ( (i + 1) % outputStep == 0) std::cout << i + 1 << "/" << nevents << "\r" << std::flush;
-				cout << i + 1 << endl;
+        if ( (i + 1) % outputStep == 0) std::cout << i + 1 << "/" << nevents << "\r" << std::flush;
         fChain -> GetEntry (i);
 				FillTracks (); // !!! particle loop goes before the event loop (energy summ is calculated in the former)
         FillEventInfo (); // !!! particle loop goes before the event loop (energy summ is calculated in the former)
@@ -87,18 +86,19 @@ void UnigenQA::Init_Histograms()
 {
 		gMomentumAxes[kEcm].max = fSnn * fA * 0.5;
 		gMomentumAxes[kPcm].max = fSnn * fA * 0.5;
-		gMomentumAxes[kMcm].max = fSnn * fA * 0.5;
-		gMomentumAxes[kElab].max = fElab * fA * 0.5;
-		gMomentumAxes[kPlab].max = fElab * fA * 0.5;
-		gMomentumAxes[kMlab].max = fSnn * fA * 0.5;
+		gMomentumAxes[kMcm].max = fA;
+		gMomentumAxes[kElab].max = fElab * fA;
+		gMomentumAxes[kPlab].max = fElab * fA;
+		gMomentumAxes[kMlab].max = fA;
 		gMomentumAxes[kA].max = fA + 2; gMomentumAxes[kA].nBins = fA + 2;
 		gMomentumAxes[kZ].max = fZ + 2; gMomentumAxes[kZ].nBins = fZ + 2;
+		
 
     if (fReferenceChain == nullptr) fReferenceChain = fChain;
     else {
         cout << "Using reference chain..." << endl;
     }
-    Double_t fPSDMax = fElab * 200.;
+    fPSDMax = (fElab + 1.) * (fA + 2);
     Double_t fMmax = fReferenceChain -> GetMaximum ("fNpa") + 10;
 
     TString name, title;
@@ -146,7 +146,7 @@ void UnigenQA::Init_Histograms()
 					auto axis = gMomentumAxes[iMom];
 					name = "hTrack" + axis.name + particle.name;
 					hTrackMomentum[iMom][iPart] = new TH1D(name, name, axis.nBins, axis.min, axis.max);
-					hTrackMomentum[iMom][iPart]->SetXTitle(axis.displayName.c_str());
+					hTrackMomentum[iMom][iPart]->SetXTitle(axis.displayName);
 					hTrackMomentum[iMom][iPart]->SetYTitle("Counts");
 			}
 			
@@ -159,14 +159,12 @@ void UnigenQA::Init_Histograms()
 
 					TString name = "hTrack" + xAxis.name + yAxis.name + particle.name;
 					TString title = yAxis.name + " : " + xAxis.name + " (" + particle.name + ")";
-					TString xTitle = xAxis.displayName;
-					TString yTitle = yAxis.displayName;
 					hTrackMomentumCorr.push_back (new TH2D* [kParticles]);
 					hTrackMomentumCorr[iCorr][iPart] = new TH2D(name, title,
 																					 xAxis.nBins, xAxis.min, xAxis.max,
 																					 yAxis.nBins, yAxis.min, yAxis.max);
-					hTrackMomentumCorr[iCorr][iPart]->SetXTitle(xTitle);
-					hTrackMomentumCorr[iCorr][iPart]->SetYTitle(yTitle);
+					hTrackMomentumCorr[iCorr][iPart]->SetXTitle(xAxis.displayName);
+					hTrackMomentumCorr[iCorr][iPart]->SetYTitle(yAxis.displayName);
 			}
 					
 			name = "hYield" + particle.name;
@@ -183,7 +181,7 @@ void UnigenQA::Init_Histograms()
 			}
 		}
 		
-		hPdg = new TH1D("hPdg","PDG code;PDG code;nCounts", 1000, -500, 3500);
+		hPdg = new TH1D("hPdg","PDG code;PDG code;nCounts", 7000, -3500, 3500);
 
     cout << "Initialization finished" << endl;
 }
@@ -193,6 +191,8 @@ void UnigenQA::FillEventInfo()
     double M = event_ -> GetNpa();
     double B = event_ -> GetB();
     double psiRP = event_ -> GetPhi();
+		
+		if (fPSDGroupEnergy [0][0] > fPSDMax) cout << "full energy = " << fPSDGroupEnergy [0][0] << endl;
 		
 		for (uint pidGroup = 0; pidGroup < fPidGroups.size(); pidGroup++)
 		{
@@ -241,13 +241,18 @@ void UnigenQA::FillTracks()
     {
         track = event_ -> GetParticle(i);
 				pdg = track -> GetPdg();
-				if (pdg == 22) continue; // patch
+//				if (pdg == 22) continue; // patch
 				if (pdg / 1000000000 != 0) 
 				{
 					A = abs (pdg % 10000 / 10);
 					Z = abs (pdg % 10000000 / 10000); 
 				}
-				else 
+				else if (pdg == 22) 
+				{
+					A = 0;
+					Z = 0;
+				}
+				else
 				{
 					A = 1;
 					Z = 1;
@@ -258,21 +263,17 @@ void UnigenQA::FillTracks()
 				y = momentum.Rapidity();
 				Ecm = momentum.E ();
 				Pcm = momentum.P ();
-//				Mcm = sqrt (fabs (Ecm * Ecm - Pcm * Pcm));
-				Mcm = sqrt (Ecm * Ecm - Pcm * Pcm);
+				Mcm = sqrt (fabs (Ecm * Ecm - Pcm * Pcm));
+//				Mcm = sqrt (Ecm * Ecm - Pcm * Pcm);
 				if (Ecm - Pcm < 0.) 
 				{
-					cout << "m^2 = " << Ecm * Ecm - Pcm * Pcm << "\tMcm = " << Mcm << "\tA = " << A << "\tZ = " << Z << "\ti = " << i << "\tpdg = " << pdg << endl;
-//					momentum.SetE (momentum.P ());
-//					Ecm = Pcm;
-//					Mcm = 0.;
+//					cout << "m^2 = " << Ecm * Ecm - Pcm * Pcm << "\tMcm = " << Mcm << "\tA = " << A << "\tZ = " << Z << "\ti = " << i << "\tpdg = " << pdg << endl;
 				}
 				momentum.Boost (0., 0., fBeta);
 				theta = momentum.Theta ();
 				Elab = momentum.E ();
 				Plab = momentum.P ();
-				Mlab = sqrt (Elab * Elab - Plab * Plab);
-//				Elab = track -> E();
+				Mlab = sqrt (fabs(Elab * Elab - Plab * Plab));
 				
 
 				if (abs (pdg) < 3500) hPdg -> Fill (pdg);
@@ -290,36 +291,41 @@ void UnigenQA::FillTracks()
 				mom [kMlab] = Mlab;
 				mom [kA] = A;
 				mom [kZ] = Z;
+				mom [kMpdg] = A * 0.931;
 				mom [kMcm_Ecm] = Mcm / Ecm;
 				mom [kMlab_Elab] = Mlab / Elab;
 				
+//				if (mom [kPlab] > gMomentumAxes[kPlab].max || mom [kElab] > gMomentumAxes[kElab].max) cout << i << "\t" << mom [kA] << "\t" << mom [kPcm] << "\t" << mom [kEcm] << endl;
+				
         for (Int_t iMom=0; iMom<kAxes; ++iMom) {
-            hTrackMomentum[iMom][0] -> Fill( mom[iMom] );
+            hTrackMomentum[iMom][kALLSPECIES] -> Fill( mom[iMom] );
+//						if (mom[iMom] > gMomentumAxes[iMom].max) cout << i << "\t" << gMomentumAxes[iMom].name << " = " << mom[iMom] << endl;
         }
 				
         for (uint j = 0; j < gTH2Axes.size (); ++j) {
             vector <int> axes = gTH2Axes[j];
-            hTrackMomentumCorr[j][0] -> Fill(mom[axes[0]], mom[axes[1]]);
+            hTrackMomentumCorr[j][kALLSPECIES] -> Fill(mom[axes[0]], mom[axes[1]]);
         }
 
         for (Int_t iHarm=0; iHarm<2; ++iHarm) {
-						pVn_pT[iHarm][0] -> Fill ( mom[kPT], Cos( (iHarm+1)*(mom[kPHI] - psiRP) ) );
-						pVn_Y[iHarm][0] ->  Fill ( mom[kYM] , Cos( (iHarm+1)*(mom[kPHI] - psiRP) ) );
+						pVn_pT[iHarm][kALLSPECIES] -> Fill ( mom[kPT], Cos( (iHarm+1)*(mom[kPHI] - psiRP) ) );
+						pVn_Y[iHarm][kALLSPECIES] ->  Fill ( mom[kYM] , Cos( (iHarm+1)*(mom[kPHI] - psiRP) ) );
 				}
+				yield[kALLSPECIES] += 1;
 				
 				for (auto group : gPSDGroups) 
 				{
 					for (uint pidGroup = 0; pidGroup < fPidGroups.size (); pidGroup++)
 					{
-						if (theta > group.theta [0] && theta < group.theta [1])
+						if (theta >= group.theta [0] && theta < group.theta [1])
 							if (abs (pdg) > fPidGroups [pidGroup][0] && abs (pdg) < fPidGroups [pidGroup][1])
 								fPSDGroupEnergy [group.id][pidGroup] += Elab;
 					}
 				}
 				
-        for(Int_t iPart=1; iPart<kParticles; ++iPart) {
+        for(Int_t iPart=0; iPart<kParticles; ++iPart) {
 						if (pdg / 1000000000 != 0) pdg = 999999;
-						if (abs (pdg) < 38) pdg = 99999;
+						if (abs (pdg) < 38 && pdg != 22) pdg = 99999;
             if (gParticles[iPart].pdg == pdg) 
 						{
                 yield[iPart] += 1;
@@ -390,7 +396,7 @@ void UnigenQA::Write_Histograms(const TString filename)
 		}	
 			
 		for (auto axis : gMomentumAxes) {
-			outputDir = outputFile -> mkdir (axis.name.c_str ());
+			outputDir = outputFile -> mkdir (axis.name);
 			outputDir -> cd ();
 			for (auto hist : hTrackMomentum [axis.id]) hist -> Write();
 		}
@@ -400,7 +406,7 @@ void UnigenQA::Write_Histograms(const TString filename)
 				vector <int> axes = gTH2Axes[iCorr];
 				auto xAxis = gMomentumAxes[axes[0]];
 				auto yAxis = gMomentumAxes[axes[1]];
-				outputDir = outputFile -> mkdir ((xAxis.name + yAxis.name).c_str ());
+				outputDir = outputFile -> mkdir (xAxis.name + yAxis.name);
 				outputDir -> cd ();
 				for (uint iPart = 0; iPart < kParticles; iPart++) hTrackMomentumCorr [iCorr][iPart] -> Write();
 		}

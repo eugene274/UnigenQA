@@ -1,6 +1,4 @@
 {
-	gROOT -> LoadMacro ("UParticle.cxx+");
-	gROOT -> LoadMacro ("UEvent.cxx+");
-	gROOT -> LoadMacro ("URun.cxx+");
-	gROOT -> LoadMacro ("UnigenQA.cxx+");
+	gSystem -> Load ("build/libUnigen.so");
+	gSystem -> Load ("build/libUnigenQA.so");
 }

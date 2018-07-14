@@ -12,6 +12,7 @@
 #include <TFile.h>
 #include <TProfile.h>
 #include <TChain.h>
+#include <TString.h>
 
 #include "URun.h"
 #include "UEvent.h"
@@ -25,13 +26,13 @@ namespace qa {
      */
 		
 		enum EMomentumAxis {
-        kPT = 0, kETA, kPHI, kYM, kEcm, kElab, kPcm, kPlab, kMcm, kMlab, kA, kZ, kMcm_Ecm, kMlab_Elab, kAxes 
+        kPT = 0, kETA, kPHI, kYM, kEcm, kElab, kPcm, kPlab, kMcm, kMlab, kA, kZ, kMpdg, kMcm_Ecm, kMlab_Elab, kAxes 
     };
 
     struct TMomentumAxis {
         Int_t id;
-        std::string name;
-        std::string displayName;
+        TString name;
+        TString displayName;
         Int_t nBins;
         Double_t min;
         Double_t max;
@@ -39,7 +40,7 @@ namespace qa {
             /* traverse momentum */
             {.id = kPT, .name = "Pt", .displayName="p_{T} (GeV/#it{c})", .nBins = 1000, .min=0.0, .max=2.5},
             /* pseudorapidity */
-            {.id = kETA, .name = "Eta", .displayName="\\eta", .nBins = 1000, .min=0., .max=10.},
+            {.id = kETA, .name = "Eta", .displayName="\\eta", .nBins = 1000, .min=-5., .max=12.},
             /* azimuthal angle */
             {.id = kPHI, .name = "Phi", .displayName="\\varphi (rad)", .nBins = 1000, .min=-TMath::Pi(), .max=TMath::Pi()},
             /* rapidity in CoM frame */
@@ -60,17 +61,19 @@ namespace qa {
             {.id = kA, .name = "A", .displayName="Mass number", .nBins = 200, .min=0., .max=200},
             /* number of protons */
             {.id = kZ, .name = "Z", .displayName="Charge number", .nBins = 82, .min=0., .max=82},
+            /* mass from PDG code */
+            {.id = kMpdg, .name = "Mpdg", .displayName="M_{PDG}", .nBins = 200, .min=0., .max=200},
             /* E/M (CMS) */
-            {.id = kMcm_Ecm, .name = "Mcm_Ecm", .displayName="E/M (CMS)", .nBins = 100, .min=0., .max=1.},
+            {.id = kMcm_Ecm, .name = "Mcm_Ecm", .displayName="M/E (CMS)", .nBins = 100, .min=0., .max=1.},
             /* E/M (LS) */
-            {.id = kMlab_Elab, .name = "Mlab_Elab", .displayName="E/M (LS)", .nBins = 100, .min=0., .max=1.},
+            {.id = kMlab_Elab, .name = "Mlab_Elab", .displayName="M/E (LS)", .nBins = 100, .min=0., .max=1.},
     };
 
     /**
      * Particles definition
      */
     enum EParticles {
-        kALLSPECIES = 0, kLEPTONS, kFRAGMENTS, kPROTON, kPROTONBAR, kPIPLUS, kPIMINUS, kKPLUS, kKMINUS, kLAMBDA, kLAMBDABAR, kParticles
+        kALLSPECIES = 0, kLEPTONS, kFRAGMENTS, kPHOTON, kPROTON, kPROTONBAR, kPIPLUS, kPIMINUS, kKPLUS, kKMINUS, kLAMBDA, kLAMBDABAR, kParticles
     };
 		
     const struct TParticle {
@@ -81,17 +84,18 @@ namespace qa {
         std::string name;
         std::string displayName;
     } gParticles[kParticles] = {
-						{kALLSPECIES,   9999,  9999, 9999,"_all_species","_all species"},
-						{kLEPTONS,   99999,  99999, 99999,"_leptons","_leptons"},
-						{kFRAGMENTS,   999999,  999999, 999999,"_fragments","_fragments"},
-            {kPROTON,       2212,  0.938, 1,  "_p",          "_p"},
-            {kPROTONBAR,    -2212, 0.938, -1, "_pbar",       "_\\bar{p}"},
-            {kPIPLUS,       211,   0.138, 1,  "_piplus",     "_\\pi^{+}"},
-            {kPIMINUS,      -211,  0.138, -1, "_piminus",    "_\\pi^{-}"},
-            {kKPLUS,        321,   0.494, 1,  "_kplus",      "_K^{+}"},
-            {kKMINUS,       -321,  0.494, -1, "_kminus",     "_K^{-}"},
-            {kLAMBDA,       3122,  1.116, 1,  "_lambda",     "_\\Lambda"},
-            {kLAMBDABAR,    -3122, 1.116, -1, "_lambda_bar", "_\\bar{\\Lambda}"}
+						{kALLSPECIES,   9999,  9999, 9999,"_all_species","all species"},
+						{kLEPTONS,   99999,  99999, 99999,"_leptons","leptons"},
+						{kFRAGMENTS,   999999,  999999, 999999,"_fragments","fragments"},
+						{kPHOTON,   22,  0., 0,"_photons","photons"},
+            {kPROTON,       2212,  0.938, 1,  "_p",          "p"},
+            {kPROTONBAR,    -2212, 0.938, -1, "_pbar",       "\\bar{p}"},
+            {kPIPLUS,       211,   0.138, 1,  "_piplus",     "\\pi^{+}"},
+            {kPIMINUS,      -211,  0.138, -1, "_piminus",    "\\pi^{-}"},
+            {kKPLUS,        321,   0.494, 1,  "_kplus",      "K^{+}"},
+            {kKMINUS,       -321,  0.494, -1, "_kminus",     "K^{-}"},
+            {kLAMBDA,       3122,  1.116, 1,  "_lambda",     "\\Lambda"},
+            {kLAMBDABAR,    -3122, 1.116, -1, "_lambda_bar", "\\bar{\\Lambda}"}
     };
 
 
@@ -107,6 +111,7 @@ namespace qa {
         std::string displayName;
         std::vector<double> theta;
     } gPSDGroups[kPSDGroups] = {
+//				{.id = kEFull,  .name = "Efull", 	.displayName = "Full E", 		.theta = {0, TMath::Pi ()}},
 				{.id = kEFull,  .name = "Efull", 	.displayName = "Full E", 		.theta = {0, 3.15}},
 				{.id = kPSDAll, .name = "PSDAll", .displayName = "Full PSD", 	.theta = {0, 0.074860}},
         {.id = kPSD1, 	.name = "PSD1", 	.displayName = "PSD1", 			.theta = {0., 0.024995}},
@@ -160,11 +165,13 @@ namespace qa {
                 {kPlab, kMlab_Elab},
                 {kA, kEcm},
                 {kA, kElab},
-                {kZ, kEcm},
-                {kZ, kElab},
+                {kA, kPcm},
+                {kA, kPlab},
                 {kMcm, kEcm},
                 {kMlab, kElab},
                 {kMcm, kMlab},
+                {kMcm, kMpdg},
+                {kMlab, kMpdg},
         };
 
         const TMomentumAxis gMultiplicity = {.id = kAxes, .name = "Mult", .displayName = "Multiplicity", .nBins = 250, .min = 0, .max = 250};
@@ -173,8 +180,7 @@ namespace qa {
         TChain *fChain;
         TChain *fReferenceChain{};
         UEvent *event_;
-
-				double fSnn {-999.}, fPcm {-999.}, fPlab {-999.}, fElab {-999.}, fEkin {-999.}, fBeta {-999.}, fA {-999.}, fZ {-999.};
+				double fPSDMax, fSnn {-999.}, fPcm {-999.}, fPlab {-999.}, fElab {-999.}, fEkin {-999.}, fBeta {-999.}, fA {-999.}, fZ {-999.};
 				vector <vector <int>> fPidGroups = {{0, 1099999999}, {37, 1099999999}};
 				vector <TString> fPidGroupNames = {"all species", "hadrons"};
 				double fPSDGroupEnergy [kPSDGroups][2];

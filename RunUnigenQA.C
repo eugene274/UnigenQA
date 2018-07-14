@@ -4,8 +4,8 @@
 
 using namespace std;
 
-void RunModelQA (TString filePath = "/home/ogolosov/Desktop/analysis/mc/root/dcmqgsm_12.root",
-								 TString qaPath = "/home/ogolosov/Desktop/analysis/mc/root/qa_botvina_T0_12agev.root") 
+void RunUnigenQA (TString filePath = "/home/ogolosov/Desktop/analysis/mc/root/dcmqgsm_12.root",
+								 TString qaPath = "/home/ogolosov/Desktop/analysis/mc/qa/qa_botvina_T0_12agev.root") 
 {
 	TStopwatch timer;
 	timer.Reset();
@@ -30,7 +30,7 @@ int main (int argc, char **argv) {
 		in = "/home/ogolosov/Desktop/analysis/mc/root/dcmqgsm_12.root";
 		out = "/home/ogolosov/Desktop/analysis/mc/qa/qa_botvina_T0_12agev.root";
 		
-    RunModelQA (in, out);
+    RunUnigenQA (in, out);
     return 0;
 }
 # endif

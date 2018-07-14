@@ -12,7 +12,7 @@
 
 using namespace std;
 
-void dat2root (TString inFile  = "/home/ogolosov/Desktop/analysis/mc/dat/dcmqgsm_12.dat", TString outFile = "/home/ogolosov/Desktop/analysis/mc/root/dcmqgsm_12.root", Bool_t isHyperNucleus=false, Double_t pBeam = 13.)
+void dat2root (TString inFile  = "/home/ogolosov/Desktop/analysis/mc/dat/dcmqgsm_12_857.dat", TString outFile = "/home/ogolosov/Desktop/analysis/mc/root/dcmqgsm_12_857.root", Double_t pBeam = 12.85, Bool_t isHyperNucleus=false)
 {
 		enum EParticles {
         kPion = 0, 
@@ -20,7 +20,7 @@ void dat2root (TString inFile  = "/home/ogolosov/Desktop/analysis/mc/dat/dcmqgsm
 				kNucleon, 
 				kLambda, 
 				kDeutron, 
-				kSigma, 
+				kSigma,
 				kXi, 
 				kDeutron2, 
 				kDeutronLambda, 
@@ -78,25 +78,23 @@ void dat2root (TString inFile  = "/home/ogolosov/Desktop/analysis/mc/dat/dcmqgsm
     ifstream *InputFile = new ifstream(inFile);
     FILE *fp = fopen(inFile.Data(), "r");
     
-    Int_t eventId, nTracks, iMass, iCharge, iStrangeness;
+    Int_t eventNr, nTracks, iMass, iCharge, iStrangeness;
     Float_t bx, by, px, py, pz, e;
     Float_t b;           
-    Float_t mass = 0.;
+    Float_t mass;
 		Float_t ExEnergy;
-		Int_t pdgType = 0;    
+		Int_t pdgType;    
+    Int_t nEvent=0;
+		bool skipFlag;
     
-    Int_t ii=0;
-    
-    while ( ! InputFile->eof() ) {
-        ii++;
-				
-				if (ii != 3) continue; // patch
+//    while ( ! InputFile->eof() ) {
+    while (*InputFile >> eventNr) {
+        nEvent++;
         
-        if ( (ii % 50) == 0 ) std::cout << "Event # " << ii << "... \r" << std::flush;         
-        *InputFile >> eventId >> b >> bx >> by; 
-        std::cout << eventId << "\t" << b << "\t" << bx << "\t" << by << std::endl; 
-        
-        Int_t eventNr = eventId;   
+        if ( (nEvent % 50) == 0 ) std::cout << "Event # " << nEvent << "... \r" << std::flush;         
+//        *InputFile >> eventNr >> b >> bx >> by; 
+        *InputFile >> b >> bx >> by; 
+//        std::cout << eventNr << "\t" << b << "\t" << bx << "\t" << by << std::endl; 
         
         Double_t phi = TMath::ATan2 (by, bx);   
         
@@ -106,26 +104,27 @@ void dat2root (TString inFile  = "/home/ogolosov/Desktop/analysis/mc/dat/dcmqgsm
         
         if ( InputFile->eof() ) break;
         
-        
+				skipFlag = false;
+        event->Clear();
         event->SetParameters( eventNr,  b,  phi,  nes, stepNr,  stepT);
         
-        for (Int_t i=0; i<2; i++)
+        for (Int_t spectType = 0; spectType < 2; spectType++)
         {
             *InputFile >> nTracks; 
             
-            std::cout << nTracks << std::endl;
+//            std::cout << nTracks << std::endl;
             
             for (Int_t iTrack=0; iTrack<nTracks; iTrack++) 
             {
-                pdgType = -1;
                 *InputFile >> iMass >> iCharge >> iStrangeness >> ExEnergy >> px >> py >> pz; 
                 
+                pdgType = -1;
                 if (iMass>1 && iCharge>0)  pdgType = iMass*10 + iCharge*1e4 + 1e9;
                 else if (iMass == 1 && iCharge == 1) pdgType = 2212;
                 else if (iMass == 1 && iCharge == -1) pdgType = -2212;
                 else if (iMass == 1 && iCharge == 0) pdgType = 2112;
                 else if (iMass == 0 && iCharge == 0) pdgType = 22;
-                else  std::cout << "Undef spectator " << iMass << "  " << iCharge << "  "  << iStrangeness << "   " << px << "  " << py << "  " << pz << "  " << std::endl;
+                else  std::cout << "Undef spectator\t" << iMass << "\t" << iCharge << "\t" << iStrangeness << "\t" << px << "\t" << py << "\t" << pz << "\t" << std::endl;
                 if (pdgType==-1) continue;
                 
                 Int_t index = iTrack;
@@ -139,25 +138,30 @@ void dat2root (TString inFile  = "/home/ogolosov/Desktop/analysis/mc/dat/dcmqgsm
                 Double_t x = 0;  
                 Double_t y = 0;  
                 Double_t z = 0;   
-                Double_t t = 2*i-1; // -1 for target spectators, +1 for projectile 
+                Double_t t = 2 * spectType - 1; // +1 for target spectators, -1 for projectile 
                 Double_t weight = 1;
+								if (pdgType == 22) mass = 0.;
+								else mass = iMass * 0.931494;
+
+								if (t > 0.1 && pz > 0.) skipFlag = true; // patch
 								
-								mass = iMass*0.931494; // mass = iMass*0.938271998;
 								e = TMath::Sqrt( px*px + py*py + pz*pz + mass*mass );
-                cout << iMass << "  " << iCharge << "  "  << iStrangeness << "   " << ExEnergy << "   " << px << "  " << py << "  " << pz << "  " << e << "  " << endl;
+//                cout << iMass << "\t" << iCharge << "\t" << iStrangeness << "\t" << ExEnergy << "\t" << px << "\t" << py << "\t" << pz << "\t" << e << "\t" << endl;
                 
-                event->AddParticle( index,  pdg,  status, parent,  parentDecay,  mate,  decay,  child, px,  py,  pz,  e,  x,  y,  z,  t, weight);
+//                event->AddParticle( index,  pdg,  status, parent,  parentDecay,  mate,  decay,  child, px,  py,  pz,  e,  x,  y,  z,  t, weight);
+                event->AddParticle( index,  pdg,  status, parent,  parentDecay,  mate,  decay,  child, px,  py,  pz,  e,  x,  y,  z,  t, ExEnergy);
                 
             }
         }
+				
         *InputFile >> nTracks; 
-				cout << nTracks << endl;
-        Int_t iTrack = 0; 
+//				cout << nTracks << endl;
         
-        while (iTrack<nTracks )
+        
+        for (Int_t iTrack = 0; iTrack < nTracks; iTrack++)
         {
             *InputFile >> iMass >> iCharge >> iStrangeness >> px >> py >> pz >> mass;
-						cout << iMass << "  " << iCharge << "  "  << iStrangeness << "   " << px << "  " << py << "  " << pz << "  " << mass << "  " << endl;
+//						cout << iMass << "\t" << iCharge << "\t" << iStrangeness << "\t" << px << "\t" << py << "\t" << pz << "\t" << mass << "\t" << endl;
             pdgType = -1;
             
             if      ( TMath::Abs(mass - masses[0]) < 0.05 && iCharge == 1  )  pdgType = 211;
@@ -196,33 +200,33 @@ void dat2root (TString inFile  = "/home/ogolosov/Desktop/analysis/mc/dat/dcmqgsm
             
             if (pdgType == -1) 
             {
-                std::cout << "Undef produced " << iMass << "  " << iCharge << "  "  << iStrangeness << "   " << mass << std::endl;
+                std::cout << "Undef produced\t" << iMass << "\t" << iCharge << "\t"  << iStrangeness << "\t" << mass << std::endl;
                 iTrack++;
                 continue;
             }
             
-            Int_t index = iTrack;
             Int_t pdg = pdgType;
             Int_t status = 0;//iStrangeness;
             Int_t parent = 0;//iCharge;   
             Int_t parentDecay = 0;//iMass;
             Int_t mate = 0; 
             Int_t decay = 0;   
-            Int_t child[2] = {0,0};
+            Int_t child [2] = {0,0};
             Double_t x = 0;  
             Double_t y = 0;  
             Double_t z = 0;   
             Double_t t = 0;//mass; 
-            Double_t weight = 1;
+            Double_t weight = 1.;
+						
+						if (pdgType == 22) mass = 0.;
 						
 						e = TMath::Sqrt( px*px + py*py + pz*pz + mass*mass );
-						event->AddParticle( index,  pdg,  status, parent,  parentDecay,  mate,  decay,  child, px,  py,  pz,  e,  x,  y,  z,  t, weight);
-            
-            iTrack++;
+						event->AddParticle( iTrack,  pdg,  status, parent,  parentDecay,  mate,  decay,  child, px,  py,  pz,  e,  x,  y,  z,  t, weight);
         }
         
+				if (skipFlag) continue; // patch
+				
         tree->Fill();
-        event->Clear();
     }
     
     InputFile->close();
