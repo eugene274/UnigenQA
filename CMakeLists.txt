@@ -4,15 +4,15 @@ set(CMAKE_cpp_STANDARD 11)
 set(CMAKE_BUILD_TYPE debug)
 
 set(EXE_SOURCES
-        RunUnigenQA.C)
+        macro/RunUnigenQA.C)
 
 set(UNIGEN_SOURCES
-        URun.cxx
-        UEvent.cxx
-        UParticle.cxx)
+        Unigen/URun.cxx
+        Unigen/UEvent.cxx
+        Unigen/UParticle.cxx)
 
 set(QA_SOURCES
-        UnigenQA.cxx)
+        src/UnigenQA.cxx)
 
 string(REPLACE ".cxx" ".h" UNIGEN_HEADERS "${UNIGEN_SOURCES}")
 string(REPLACE ".cxx" ".h" QA_HEADERS "${QA_SOURCES}")
@@ -33,9 +33,9 @@ include(${ROOT_USE_FILE})
 message("${ROOT_USE_FILE}")
 add_definitions(${ROOT_CXX_FLAGS})
 
-include_directories(${CMAKE_SOURCE_DIR} ${ROOT_INCLUDE_DIRS})
+include_directories(${CMAKE_SOURCE_DIR} ${ROOT_INCLUDE_DIRS} Unigen src)
 
-ROOT_GENERATE_DICTIONARY(G__Unigen ${UNIGEN_HEADERS} LINKDEF UnigenLinkDef.h)
+ROOT_GENERATE_DICTIONARY(G__Unigen ${UNIGEN_HEADERS} LINKDEF Unigen/UnigenLinkDef.h)
 add_library(Unigen SHARED ${UNIGEN_SOURCES} G__Unigen)
 target_link_libraries(Unigen ${ROOT_LIBRARIES})
 
