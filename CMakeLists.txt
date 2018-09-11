@@ -58,12 +58,8 @@ if (${CMAKE_MAJOR_VERSION} GREATER 2)
     set_property(TARGET UnigenQA PROPERTY INTERFACE_UnigenQA_MAJOR_VERSION 1)
     set_property(TARGET UnigenQA APPEND PROPERTY COMPATIBLE_INTERFACE_STRING INTERFACE_UnigenQA_MAJOR_VERSION)
 
-<<<<<<< HEAD
     install(TARGETS Unigen UnigenQA 
-						EXPORT UnigenQATargets
-=======
-    install(TARGETS Unigen UnigenQA EXPORT UnigenQATargets
->>>>>>> df4f3e795e5421f6bbaba42eea370f3ed8228a62
+	    EXPORT UnigenQATargets
             LIBRARY DESTINATION lib
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin
