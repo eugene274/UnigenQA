@@ -3,6 +3,7 @@ project(UnigenQA)
 set(PROJECT_VERSION 1.0)
 set(CMAKE_cpp_STANDARD 11)
 #set(CMAKE_BUILD_TYPE debug)
+<<<<<<< HEAD
 
 file(GLOB UNIGEN_SOURCES Unigen/*.cxx)
 file(GLOB UNIGEN_HEADERS Unigen/*.h)
@@ -12,6 +13,25 @@ file(GLOB QA_HEADERS src/*.h)
 file(GLOB QA_HEADERS_DICT RELATIVE ${CMAKE_SOURCE_DIR}/src src/*.h)
 list(REMOVE_ITEM UNIGEN_HEADERS_DICT UnigenLinkDef.h)
 
+=======
+
+set(UNIGEN_SOURCES
+        Unigen/URun.cxx
+        Unigen/UEvent.cxx
+        Unigen/UParticle.cxx)
+
+set(QA_SOURCES
+        src/UnigenQA.cxx)
+
+file(GLOB UNIGEN_SOURCES Unigen/*.cxx)
+file(GLOB UNIGEN_HEADERS Unigen/*.h)
+file(GLOB UNIGEN_HEADERS_DICT RELATIVE ${CMAKE_SOURCE_DIR}/Unigen Unigen/*.h)
+file(GLOB QA_SOURCES src/*.cxx)
+file(GLOB QA_HEADERS src/*.h)
+file(GLOB QA_HEADERS_DICT RELATIVE ${CMAKE_SOURCE_DIR}/src src/*.h)
+list(REMOVE_ITEM UNIGEN_HEADERS_DICT UnigenLinkDef.h)
+
+>>>>>>> df4f3e795e5421f6bbaba42eea370f3ed8228a62
 set (HEADERS 
 	${UNIGEN_HEADERS}
 	${QA_HEADERS}
@@ -58,8 +78,12 @@ if (${CMAKE_MAJOR_VERSION} GREATER 2)
     set_property(TARGET UnigenQA PROPERTY INTERFACE_UnigenQA_MAJOR_VERSION 1)
     set_property(TARGET UnigenQA APPEND PROPERTY COMPATIBLE_INTERFACE_STRING INTERFACE_UnigenQA_MAJOR_VERSION)
 
+<<<<<<< HEAD
     install(TARGETS Unigen UnigenQA 
 						EXPORT UnigenQATargets
+=======
+    install(TARGETS Unigen UnigenQA EXPORT UnigenQATargets
+>>>>>>> df4f3e795e5421f6bbaba42eea370f3ed8228a62
             LIBRARY DESTINATION lib
             ARCHIVE DESTINATION lib
             RUNTIME DESTINATION bin
